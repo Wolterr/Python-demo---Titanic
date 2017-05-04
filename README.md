@@ -7,5 +7,6 @@ This code is used in a seminar where we compare Matlab, R, Python, Knime and Rap
 Repository contains
 - iPython notebook : The initial code for this project
 - Python code      : Export from the notebook. More useful in other python tools
+- PDF file		   : PDF export from the notebook using Jupyter and condac. Warning: code lines do not fit page and drop off every now and then.
 - data directory   : directory containing the train and test data
 - images           : PNG exports of the two visualisations in the notebook
