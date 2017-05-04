@@ -1,4 +1,4 @@
-# Python-demo---Titanic
+# Python demo - Titanic
 This repository contains a simple analysis of the Kaggle Titanic dataset. 
 The goal is to provide a quick intro into python for some colleagues. 
 
