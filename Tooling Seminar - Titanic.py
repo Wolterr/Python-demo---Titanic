@@ -1,3 +1,8 @@
+
+# coding: utf-8
+
+# In[1]:
+
 get_ipython().magic('matplotlib inline')
 # Scientific computing
 import numpy as np
@@ -14,45 +19,68 @@ from sklearn import tree
 from sklearn.tree import export_graphviz
 from sklearn.metrics import confusion_matrix, f1_score, roc_auc_score
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+
+# In[3]:
 
 # Read data
-train_data = pd.read_csv('./data/train.csv')
-test_data = pd.read_csv('./data/test.csv')
-test_y = pd.read_csv('./data/gender_submission.csv').Survived
+train_data = pd.read_csv('./train.csv')
+
+train_data, test_data = train_test_split(train_data, test_size = 0.2)
+test_y = test_data.Survived
+test_data.drop('Survived', axis=1, inplace=True)
 
 train_data.head(10)
+
+
+# In[4]:
 
 train_data.info()
 print("--------------")
 test_data.info()
 
 
-# As shown we have 891 entries in the training data and 418 entries in the test data. However, the info also shows there are missing values in the age column. For test there is also a missing Fare value.
+# We hebben dus 891 entries. De meeste data lijkt compleet, maar bij leeftijd missen er een aantal waardes. Voor test is dit hetzelfde, maar mist er ook een fare waarde.
+
+# In[5]:
 
 grouped = train_data.groupby('Survived')
 grouped.count()
 
 
-#From the breakdown above we see the our target class (Survived) is relatively balanced over the training set. We also again see missing values.
-#
-#There are some columns (Name, Ticket, Embarked) that probably are not as strong for our prediction.
-#They are also fairly difficult to transform into something more useful. Lets discard these.
-#
-#After we get rid of the columns specified above, we still have to deal with the NaN values we found.
+# Als we de data groeperen op onze doel-variabele, zien we dat de klassen redelijk gebalanceerd zijn.
 
-train_data.drop(['PassengerId','Name','Ticket','Cabin','Embarked'], axis=1, inplace=True)
+# We hebben dus redelijk gebalanceerde aantallen over de doel-variabele en de data is ook vrij goed (weinig missende getallen).
+# 
+# Wel hebben we een aantal categoriën die minder zeggen (naam, id, kaartnummer, waar ze ingestapt zijn). Deze variabelen kunnen we uit de set gooien.
+# 
+# Daarna moeten we de NAN's in de age kolom nog aanpakken. 
+# 
+# We gaan er hier even van uit dat dit hetzelfde is voor de test data.
+
+# In[6]:
+
+train_data.drop(['PassengerId','Name','Ticket','Cabin','Embarked'], axis=1, 
+                inplace=True)
 train_data['Age'].fillna(train_data['Age'].mean(), inplace=True)
 train_data.Age = train_data.Age.round(decimals=0)
 train_data.head(10)
 
-test_data.drop(['PassengerId','Name','Ticket','Cabin','Embarked'], axis=1, inplace=True)
+
+# In[7]:
+
+test_data.drop(['PassengerId','Name','Ticket','Cabin','Embarked'], axis=1, 
+               inplace=True)
 test_data['Age'].fillna(test_data['Age'].mean(), inplace=True)
 test_data.Age = test_data.Age.round(decimals=0)
 test_data['Fare'].fillna(test_data['Fare'].median(), inplace=True)
 test_data.info()
 
 
-#In our final preparation step we turn the 'Sex' column into a dummy column with 0 being male and 1 being female.
+# Als laatste voorbereiding maken we van een aantal variablen categorische variabelen.
+
+# In[8]:
 
 #train_data.Pclass = train_data.Pclass.astype('category')
 #train_data.Sex = train_data.Sex.astype('category')
@@ -64,23 +92,29 @@ test_data['Sex'] = np.where(test_data['Sex'] == 'female', 1, 0)
 test_data.head(10)
 
 
-#Lets start looking at our data now we have cleaned it. 
-#Do we need any other steps to handle correlations before we train a model?
+# Nu kunnen we gaan kijken naar de data
+
+# In[9]:
+
 correlations = train_data.corr()
 print(correlations['Survived'])
 
 plt.figure(figsize=(10,10))
-sns.heatmap(correlations,linewidths=0.25, square=True, cbar_kws={'shrink' : .6}, annot=True, vmin=0, vmax=1)
+sns.heatmap(correlations,linewidths=0.25, square=True, 
+            cbar_kws={'shrink' : .6}, annot=True, vmin=0, vmax=1)
 plt.title("Heatmap over de correlaties tussen de variabelen")
 
 
-#It appears are variables are not strongly correlated to each other.
-#From the list of how the variables are correlated to the Survived label we can get the feeling a model might work quite well.
-#
-#As a last step before we start training a model we will plot the pairwise distribution between the variables.
-#Note: This only works because we only have a few columns. With more columns the figures look terrible.
+# Het lijkt er op dat er niet veel variabelen zijn die sterk met elkaar gecorreleerd zijn. Hier hoeven we dus niet veel voorwerk te doen.
+# 
+# Laten we als laatste eens kijken naar hoe de variabelen onderling verdeeld zijn. 
+
+# In[10]:
+
 sns.pairplot(train_data)
 
+
+# In[11]:
 
 # Train the model 
 train_x = train_data.drop('Survived', axis=1, inplace=False)
@@ -89,6 +123,8 @@ train_y = train_data.Survived
 classifier = tree.DecisionTreeClassifier()
 classifier.fit(train_x, train_y)
 
+
+# In[12]:
 
 # Check score on training set
 cm_train = confusion_matrix(train_y, classifier.predict(train_x))
@@ -100,9 +136,13 @@ print('AUC      : {}'.format(auc_train))
 print('F1 Score : {}'.format(f1_train))
 
 
+# In[13]:
+
 # Create predictions on the test set
 predictions = classifier.predict(test_data)
 
+
+# In[14]:
 
 # Score on the test outcomes
 cm_test = confusion_matrix(test_y, predictions)
@@ -114,7 +154,8 @@ print('AUC      : {}'.format(auc_test))
 print('F1 Score : {}'.format(f1_test))
 
 
-# Possibility to save the tree to file, load it, turn it into PNG and show it here. Didn't work on work laptop.
+# In[ ]:
+
 # Save decision tree to file, reload it and show in a plot
 #with open("dt.dot", 'w') as f:
 #    export_graphviz(classifier, out_file=f,
@@ -126,6 +167,15 @@ print('F1 Score : {}'.format(f1_test))
 
 
 # There seems to be a lot of overfitting. Perhaps we can tweak the model to have some more constraints.
+
+# In[15]:
+
+# Look at our current tree
+classifier.get_params
+
+
+# In[16]:
+
 c2 = tree.DecisionTreeClassifier(max_depth = 15, max_leaf_nodes=10)
 c2.fit(train_x, train_y)
 
@@ -135,6 +185,9 @@ f1_score(train_y, c2.predict(train_x))
 # We now have a highly constrained decision tree. A much lower score on the train set means we're not fitting to all our training examples anymore. 
 # 
 # Lets see if this helps our test predictions any
+
+# In[17]:
+
 pred = c2.predict(test_data)
 print(confusion_matrix(test_y, pred))
 print("------------------------------")
@@ -145,7 +198,11 @@ print("F1 Score  = {}".format(f1_score(test_y, pred)))
 # We get a much better score with our constrained tree. Overfitting indeed was the problem.
 # 
 # Finally lets try a Random Forest to see if a whole set of (constrained) decision trees does better then a single tree.
-forest = RandomForestClassifier(n_estimators=100, max_leaf_nodes=10)
+
+# In[74]:
+
+forest = RandomForestClassifier(n_estimators=100, max_features = 'log2', 
+                                max_leaf_nodes = 15)
 forest.fit(train_x, train_y)
 y_pred = forest.predict(test_data)
 print("Accuracy score = {}".format(forest.score(test_data, test_y)))
@@ -153,4 +210,9 @@ print("F1 score       = {}".format(f1_score(test_y, y_pred)))
 print("AUC score      = {}".format(roc_auc_score(test_y,y_pred)))
 print("---------")
 print(confusion_matrix(test_y, y_pred))
+
+
+# In[ ]:
+
+
 
